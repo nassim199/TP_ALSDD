@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1552125665 source:c:\users\user\documents\programmation_c\tp_alsdd\main.c
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+
