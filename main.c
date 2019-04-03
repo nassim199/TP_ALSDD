@@ -3,13 +3,18 @@
 #include <time.h>
 #include <string.h>
 #define tailleDico 3000
+
 //***************************************************************
 //implementation du modele de LLC de la structure du dictionnaire
 //***************************************************************
 
 //le maillon contient le mot et l'indice et l'addresse du maillon suivant
 
-typedef struct Maillon { char* mot ; int ind ; struct Maillon *next; } Maillon;
+typedef struct Maillon {
+	char* mot ;
+	int ind ;
+	struct Maillon *next;
+} Maillon;
 
 void allouer (Maillon **nouveau)
 {
@@ -73,7 +78,7 @@ int alealong(int a ,int b)
     }
 }
 char alealettre(int a, int b)
-{ //generer une lettre aleatoire d'ordre entre a et b
+{ //generer une lettre miniscule aleatoire d'ordre entre a et b
     char c;
     if (a<=b && a>=1 && b<=26) {
         c = random(a+96,b+97);
@@ -112,18 +117,37 @@ int def(char* mot)
 
 //type Dico est les mot avec sa definition
 
-typedef struct Dico { char* mot ; int def ;} Dico;
+typedef struct Dico {
+	char* mot ;
+	int def ;
+} Dico;
 
 //procedure de creation du dico
 
 void creationDico (Dico dico[tailleDico])
 { //le dictionnaire est un tableau de Dico de taille tailleDico
-   int i ;
+   int i , j , existe = 0;
+   char* nouveauMot;
 
    for(i=0 ; i<tailleDico ; i++) {
-    //pour chaque case on associe un mot aleatoire et puis sa definition
-    dico[i].mot = aleamot(2,8);
-    dico[i].def = def(dico[i].mot);
+   		do {
+		    //on cree mot aleatoire
+		    nouveauMot = aleamot(2,8);
+		    existe = 0;
+		    //on verifie qu'il n'existe pas deja dans le dictionnaire pour eviter les collisions
+		    for ( j = 0; j < i; j++)
+		    {
+		    	if (strcmp(dico[j].mot,nouveauMot)==0) {
+		    		existe = 1;
+		    	}
+		    }
+		    if (existe) {
+		    	free(nouveauMot);
+		    }
+	    } while (existe); //on repete jusqu'a trouver un mot qui n'existe pas dans le dictionnaire
+	    dico[i].mot = nouveauMot;
+	    dico[i].def = def(nouveauMot);
+
    }
 }
 
@@ -153,19 +177,34 @@ void accesLongcpt(Maillon *t,int L , Maillon **q , int *cpt )
 
 void insertion(char* mot , Maillon **t , int i)
 { //insere un mot dans une liste par longueur
-    int L = strlen(mot) ;
+    int L = strlen(mot) ,cpt , j;
 
     Maillon *r = NULL  , *p = NULL, *q = NULL;
     accesLong(*t, L , &p , &q);
-    allouer(&r);
-    aff_adr(r,q);
-    aff_ind(r,i); //i est l'indice
-    aff_mot(r,mot);
-    if (q==(*t)) {
-    	*t = r;
-    } else {
-    	aff_adr(p,r);
+    //on verifie que le mot n'existe pas dans la liste
+    while (  p!=NULL && strcmp( mot , mot_maillon(p)) && (strlen(mot)==strlen(mot_maillon(p)))  )
+    { // on parcourt le reste de la liste jusqu'a trouver le mot si il existe
+        p=suivant(p);
     }
+    if ( p == NULL || strcmp(mot , mot_maillon(p)) )
+    { // donc le mot n'existe pas
+        cpt = 1 ;
+        // cpt=1  indique que le mot n'existe pas
+    } else {
+    	cpt = 0 ;
+    	//cpt=0 indique que le mot existe des
+    }
+    if (cpt) {
+	    allouer(&r);
+	    aff_adr(r,q);
+	    aff_ind(r,i); //i est l'indice
+	    aff_mot(r,mot);
+	    if (q==(*t)) {
+	    	*t = r;
+	    } else {
+	    	aff_adr(p,r);
+	    }
+	}
 
 }
 
@@ -181,7 +220,7 @@ void dicoStructure (Dico dico[tailleDico], Maillon* T[26])
     }
 }
 void dicoStructurePlus ( Dico dico[tailleDico] , Maillon* T2 [26][26])
-{   // creation de la structure amÈliorÈe
+{   // creation de la structure am√©lior√©e
     int i , ordrelig , ordrecol ;
     for (i=0 ; i < tailleDico ;i++ )
     {
@@ -199,49 +238,60 @@ void Recherche (  char* mot ,  int  *i , Maillon* T[26] , int *cpt  )
 { //recherche un mot dans la structure de base , si il existe renvoie son indice + le nombre de comparaisons faites
     int ordre ;
     ordre = mot[0] - 97 ;
-    *cpt = 1 ;
-    // cpt est le compteur de nombre de comparaisons faites pour la recherche
-    Maillon* p = T[ordre] ;
-    accesLongcpt(T[ordre], strlen(mot), &p , cpt);
-    // accÈs au premier maillon qui a un  mot de longueure superieur ou egal a la longueur de MOT
-    while (  p!=NULL && strcmp( mot , mot_maillon(p))!= 0 && strlen(mot)== strlen(mot_maillon(p))  )
-    { // on parcourt le reste de la liste jusqu'a trouver le mot si il existe
-        (*cpt)++ ;
-        p=suivant(p);
-    }
-    if ( p == NULL || strcmp(mot , mot_maillon(p))!= 0 )
-    { // donc le mot n'existe pas
-        *cpt = 0 ;
-        *i = -1 ;
-        // cpt=0 et i=-1 indique que le mot n'existe pas
-    }
-    else
-    {
-        *i = indice(p) ; // mot est dans la maillon  pointÈ par p
+    //on verifie que le mot commence avec une lettre miniscule
+    if (ordre<26 && ordre>=0) {
+        *cpt = 1 ;
+        // cpt est le compteur de nombre de comparaisons faites pour la recherche
+        Maillon* p = T[ordre] ;
+        accesLongcpt(T[ordre], strlen(mot), &p , cpt);
+        // acc√©s au premier maillon qui a un  mot de longueure superieur ou egal a la longueur de MOT
+        while (  p!=NULL && strcmp( mot , mot_maillon(p)) && strlen(mot)== strlen(mot_maillon(p))  )
+        { // on parcourt le reste de la liste jusqu'a trouver le mot si il existe
+            (*cpt)++ ;
+            p=suivant(p);
+        }
+        if ( p == NULL || strcmp(mot , mot_maillon(p)) )
+        { // donc le mot n'existe pas
+            *cpt = 0 ;
+            *i = -1 ;
+            // cpt=0 et i=-1 indique que le mot n'existe pas
+        }
+        else
+        {
+            *i = indice(p) ; // mot est dans la maillon  point√© par p
+        }
+    } else {
+        *cpt=0;
+        *i=-1;
     }
 }
 
 void RecherchePlus (  char* mot ,  int  *i , Maillon* T2[26][26] , int *cpt  )
-{ //meme role que recherche mais dans la structure ameliore
+{ //meme role que recherche mais avec la structure ameliore
     int ordrecol , ordrelig ;
     ordrelig = mot[0] - 97 ;
     ordrecol = mot[1] - 97 ;
     *cpt = 1 ;
-    Maillon* p = T2[ordrelig][ordrecol] ;
-    accesLongcpt(T2[ordrelig][ordrecol], strlen(mot), &p , cpt);
-    while (  p!=NULL && strcmp( mot , mot_maillon(p))!= 0 && strlen(mot)==strlen(mot_maillon(p))  )
-    {
-        (*cpt)++ ;
-        p=suivant(p);
-    }
-    if ( p == NULL || strcmp(mot , mot_maillon(p))!= 0 )
-    {
-        *cpt = 0;
-        *i = -1;
-    }
-    else
-    {
-        *i = indice(p) ;
+    if (ordrecol<26 && ordrecol>=0 && ordrelig<26 && ordrelig>=0){
+        Maillon* p = T2[ordrelig][ordrecol] ;
+        accesLongcpt(T2[ordrelig][ordrecol], strlen(mot), &p , cpt);
+        while (  p!=NULL && strcmp( mot , mot_maillon(p))!= 0 && strlen(mot)==strlen(mot_maillon(p))  )
+        {
+            (*cpt)++ ;
+            p=suivant(p);
+        }
+        if ( p == NULL || strcmp(mot , mot_maillon(p))!= 0 )
+        {
+            *cpt = 0;
+            *i = -1;
+        }
+        else
+        {
+            *i = indice(p) ;
+        }
+    } else {
+        *cpt=0;
+        *i=-1;
     }
 }
 
@@ -270,16 +320,16 @@ void RechercheMultiple(char* mot,Dico dico[tailleDico],Maillon* T[26],Maillon* T
                //on parcourt tout le reste de la liste
                if (strncmp(mot,mot_maillon(q),l)==0) {
                     //si le debut du mot maillon est le meme que le mot on l'affiche
-                    printf("%s : %d \n",mot_maillon(q),dico[indice(q)].def);
+                    printf("\n  %s : %d ",mot_maillon(q),dico[indice(q)].def);
                     k++;
                }
                q=suivant(q);
             } while(q!=NULL);
-            if (k==0) printf("Aucun resultat..\n");
+            if (k==0) printf("\n  Aucun resultat..\n");
             //si aucun mot n'a ete affiche donc y'a aucun resultat
         } else {
             //aucun mot de cette taille n'existe
-            printf("Aucun resultat..\n");
+            printf("\n  Aucun resultat..\n");
         }
     }
 }
@@ -305,11 +355,11 @@ void RechercheMots(char* mot,Dico dico[tailleDico],Maillon* T[26],Maillon* T2[26
                     printf("%s : %d \n",mot,dico[i].def);
                 } else {
                     //donc le mot n'existe pas (cpt=0)
-                    printf("Aucun resultat..\n");
+                    printf("\n  Aucun resultat..\n");
                 }
             } else {
                 if(mot[0]!='*'){
-                    printf("Aucun resultat.. \n");
+                    printf("\n  Aucun resultat.. \n");
                 } else {
                     //puisque mot='*' donc on affiche tout les mots existants
                     for(i=0;i<26;i++) {
@@ -323,9 +373,9 @@ void RechercheMots(char* mot,Dico dico[tailleDico],Maillon* T[26],Maillon* T2[26
         }
     } else {
         if (l>8) {
-            printf("un mot ne doit pas depasser 8 caracteres\n");
+            printf("\n  Un mot ne doit pas depasser 8 caracteres\n");
         } else {
-            printf("le mot doit contenir au moins un caractere\n");
+            printf("\n  Le mot doit contenir au moins un caractere\n");
         }
     }
 }
@@ -352,15 +402,17 @@ void RechercheCmp (Dico dico[tailleDico],Maillon* T[26],Maillon* T2[26][26])
  fprintf(fichier,"</dico>");
  fclose(fichier);
 }
+
 //****************
 //autres fonctions
 //****************
 
-void afficher(Maillon *p, Dico dico[tailleDico]) {
-while (p != NULL) {
-    printf("%s : %d \n",mot_maillon(p),dico[indice(p)].def);
-    p=suivant(p);
-}
+void afficher(Maillon *p, Dico dico[tailleDico])
+{
+	while (p != NULL) {
+	    printf("%s : %d \n",mot_maillon(p),dico[indice(p)].def);
+	    p=suivant(p);
+	}
 }
 void viderBuffer()
 {
@@ -394,16 +446,21 @@ int lire(char *chaine, int longueur)
         return 0;
     }
 }
+
+//********************
+//Programme principale
+//********************
+
 int main()
 {
-    int a=1;
-    char motRecherche[9];
+    int a=1,c=0,b=0,cpt1,cpt2,i,ord1,ord2;
+    char motRecherche[9],d;
     Dico dico[tailleDico];
     Maillon* T[26]={NULL};
     Maillon* T2 [26][26]={NULL};
-    printf("Bienvenue \nSi vous voulez generer un dictionnaire aleatoire tapez entree..");
-    getchar();
-    printf("Dictionnaire en cours de creation ...");
+    printf("\n   BIENVENUE \n\n   Si vous voulez generer un dictionnaire aleatoire tapez entree..");
+    viderBuffer();
+    printf("\n   Dictionnaire en cours de creation ...");
     srand(time(NULL));
     creationDico(dico);
     dicoStructure(dico ,T);
@@ -411,41 +468,49 @@ int main()
     do {
     if (a==1 || a==2){
         system("cls");
-        printf("\nMenu : \n\n 1 - Lancer une recherche. \n 2 - Comparer l'efficacite des deux structures crees. \n 3 - EXIT.");
+        printf("\n  Menu : \n\n\n    1 - Lancer une recherche. \n\n    2 - Comparer l'efficacite des deux structures crees. \n\n    3 - EXIT.");
     }
     printf("\n\n Votre choix est : ");
     scanf("%d",&a);
     viderBuffer();
     if (a==1) {
         system("cls");
-        printf("Un petit man :\n");
-        printf(" Si vous voulez chercher la definition d'un mot exacte tapez le mot exacte\n Attention la taille du mot doit etre entre 2 et 8\n");
-        printf("\n Pour chercher afficher tout les mots qui commencent par une chaine de caractere ajoutez un asterisque a la fin de la chaine '*'\n");
-        printf(" Par exemple si vous voulez chercher tout les mots qui commencent par 'a' ou 'ph' vous tapez 'a*' ou 'ph*'\n");
-        printf(" Si vous tapez seulement '*' tout les mots seront affiches\n");
-        printf("pour lancer votre recherche tapez entree..\n");
-        getchar();
-        printf("Le mot est : ");
-        lire(motRecherche,9);
-        RechercheMots(motRecherche,dico,T,T2);
-        printf("\nPour retourner au menu tapez entree..");
-        getchar();
+        printf("\n  Un petit man :\n\n");
+        printf("  Si vous voulez chercher la definition d'un mot exacte tapez le mot exacte\n  Attention la taille du mot doit etre entre 2 et 8\n");
+        printf("\n\n  Si vous voulez afficher tout les mots qui commencent par une chaine de caractere donnees\n  Ajoutez un asterisque a la fin de la chaine '*'\n\n");
+        printf("  Par exemple si vous voulez chercher tout les mots qui commencent par 'a' ou 'ph' :\n  vous tapez 'a*' ou 'ph*'\n");
+        printf("  Si vous tapez seulement '*' tout les mots seront affiches\n\n");
+        printf("\n\n  Pour lancer votre recherche tapez entree..\n");
+        viderBuffer();
+        do{
+            printf("\n  Le mot est (en miniscule) : ");
+            lire(motRecherche,9);
+            RechercheMots(motRecherche,dico,T,T2);
+            printf("\n  Pour relancer une recherche tapez entree..");
+            printf("\n  Pour retourner au menu tapez 0\n");
+            c = getchar() - 48;
+            if (c!=0 && (c+48)!='\n') {
+                do{
+                   d=getchar();
+                }while(d!='\n' && d!=EOF);
+            }
+        } while (c!=0);
     } else if (a==2) {
-        RechercheCmp(dico,T,T2);
-        system("cls");
-        printf("\nRemarque : Pour pouvoir voir le resultat et le graphe de comparaison vous devez posseder le logiciel excel\n");
-        printf("Lorsque le fichier excel s'ouvre vous devrez mettre a jour les donnees\n");
-        printf("Pour cela vous allez a developpeur et dans le champs XML 'appuyer sur actualiser les donnees'\n");
-        printf("(Si vous ne voyez pas l'onglet developpeur allez dans options et puis dans Onglets principaux et vous cochez 'developpeur')\n");
-        printf("(Si le bouton de 'actualiser les donnees' n'est pas cliquable assurez vous de selectionner d'abords sur le tableau des donnees)\n");
-        printf("Si vous voudrez revenir en interaction avec la console vous devez d'abords fermer le fichier excel\n");
-        printf("Appuyer sur entree pour ouvrir le fichier excel ..");
-        getchar();
-        system("cls");
-        printf("Veuillez patienter un peu s'il vous plait !");
-        system("analyseRecherche.xlsx");
+            RechercheCmp(dico,T,T2);
+            system("cls");
+            printf("  Lorsque le fichier excel s'ouvre vous devrez mettre a jour les donnees\n  Ou les importer si c'est la premiere fois\n\n");
+            printf("  Pour importer les donnees pour la premiere fois :\n  Allez a l'onglet developpeur , champ XML \n  Puis appuyer sur 'Importer des donnees'\n  Selectionner le fichier 'recherche_cmp'\n");
+            printf("  (Si vous ne voyez pas l'onglet developpeur allez dans options et puis dans Onglets principaux et vous cochez 'developpeur')\n\n");
+            printf("  Une fois les donnees imprtees la prochaine fois vous n'avez qu'a actualiser les donnees \n  (vous pouvez tout de meme importer a chaque fois les donnees )\n");
+            printf("  (Si le bouton de 'actualiser les donnees' n'est pas cliquable assurez vous de selectionner d'abords le tableau des donnees)\n\n");
+            printf("  Appuyer sur entree pour ouvrir le fichier excel ..\n");
+            getchar();
+            system("cls");
+            printf("\n  Veuillez patienter un peu s'il vous plait !\n\n");
+            printf("  (Si vous voudrez revenir en interaction avec la console vous devrez d'abords fermer le fichier excel et attendre..)\n");
+            system("analyseRecherche.xlsx");
     } else if (a!=3) {
-        printf("Veuillez choisir une des options possibles seulement .");
+        printf("\n Veuillez choisir une des options possibles seulement !");
     }
     } while (a!=3);
     return 0;
