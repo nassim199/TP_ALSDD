@@ -157,6 +157,7 @@ void creationDico (Dico dico[tailleDico])
 
 void accesLong(Maillon *t,int L , Maillon **p, Maillon **q)
 { //donne le premier mot de longueure superieur ou egal a L dans q si il existe et NULL sinon, p est le precedent de q
+  //elle sert a l'insertion
 	*q=t;
 	*p=NULL;
 	while ( (*q)!=NULL && strlen(mot_maillon(*q))<L) {
@@ -167,6 +168,7 @@ void accesLong(Maillon *t,int L , Maillon **p, Maillon **q)
 
 void accesLongcpt(Maillon *t,int L , Maillon **q , int *cpt )
 { //une extension de la procedure de accesLong , elle donne le nombre de comparaions faites dans le parcours
+  //elle sert a la recherche
 	*q=t;
 	*cpt= 1 ;
 	while ( (*q)!=NULL && strlen(mot_maillon(*q))<L) {
@@ -373,7 +375,7 @@ void RechercheMots(char* mot,Dico dico[tailleDico],Maillon* T[26],Maillon* T2[26
         }
     } else {
         if (l>8) {
-            printf("\n  Un mot ne doit pas depasser 8 caracteres\n");
+            printf("\n  Le mot ne doit pas depasser 8 caracteres\n");
         } else {
             printf("\n  Le mot doit contenir au moins un caractere\n");
         }
@@ -453,7 +455,7 @@ int lire(char *chaine, int longueur)
 
 int main()
 {
-    int a=1,c=0,b=0,cpt1,cpt2,i,ord1,ord2;
+    int a=1,c=0;
     char motRecherche[9],d;
     Dico dico[tailleDico];
     Maillon* T[26]={NULL};
@@ -476,7 +478,7 @@ int main()
     if (a==1) {
         system("cls");
         printf("\n  Un petit man :\n\n");
-        printf("  Si vous voulez chercher la definition d'un mot exacte tapez le mot exacte\n  Attention la taille du mot doit etre entre 2 et 8\n");
+        printf("  Si vous voulez chercher la definition d'un mot tapez le mot exacte\n  Attention la taille du mot doit etre entre 2 et 8\n");
         printf("\n\n  Si vous voulez afficher tout les mots qui commencent par une chaine de caractere donnees\n  Ajoutez un asterisque a la fin de la chaine '*'\n\n");
         printf("  Par exemple si vous voulez chercher tout les mots qui commencent par 'a' ou 'ph' :\n  vous tapez 'a*' ou 'ph*'\n");
         printf("  Si vous tapez seulement '*' tout les mots seront affiches\n\n");
